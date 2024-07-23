@@ -1,0 +1,115 @@
+parameters:
+- name: checkoutRepo
+  type: string
+  default: 'self'
+- name: checkoutRef
+  type: string
+  default: ''
+- name: aptPackages
+  type: object
+  default:
+    - gfortran
+    - git
+    - libdrm-dev
+    - libmsgpack-dev
+    - ninja-build
+    - python3-pip
+    - python3-venv
+- name: pipModules
+  type: object
+  default:
+    - joblib
+- name: rocmDependencies
+  type: object
+  default:
+    - clr
+    - hipBLAS
+    - llvm-project
+    - rocminfo
+    - rocprofiler-register
+    - ROCR-Runtime
+
+jobs:
+- job: hipBLASLt
+  timeoutInMinutes: 100
+  variables:
+  - group: common
+  - template: /.azuredevops/variables-global.yml
+  - name: HIP_ROCCLR_HOME
+    value: $(Build.BinariesDirectory)/rocm
+  - name: TENSILE_ROCM_ASSEMBLER_PATH
+    value: $(Agent.BuildDirectory)/rocm/llvm/bin/amdclang
+  - name: CMAKE_CXX_COMPILER
+    value: $(Agent.BuildDirectory)/rocm/bin/hipcc
+  - name: TENSILE_ROCM_OFFLOAD_BUNDLER_PATH
+    value: $(Agent.BuildDirectory)/rocm/llvm/bin/clang-offload-bundler
+  - name: TENSILE_ROCM_PATH
+    value: $(Agent.BuildDirectory)/rocm/bin/hipcc
+  - name: PATH
+    value: $(Agent.BuildDirectory)/rocm/llvm/bin:$(Agent.BuildDirectory)/rocm/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin
+  pool: ${{ variables.MEDIUM_BUILD_POOL }}
+  workspace:
+    clean: all
+  steps:
+  - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/dependencies-other.yml
+    parameters:
+      aptPackages: ${{ parameters.aptPackages }}
+      pipModules: ${{ parameters.pipModules }}
+  - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/dependencies-cmake-latest.yml
+  - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/preamble.yml
+  - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/checkout.yml
+    parameters:
+      checkoutRepo: ${{ parameters.checkoutRepo }}
+# CI case: download latest default branch build
+  - ${{ if eq(parameters.checkoutRef, '') }}:
+    - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/dependencies-rocm.yml
+      parameters:
+        dependencyList: ${{ parameters.rocmDependencies }}
+        dependencySource: staging
+# manual build case: triggered by ROCm/ROCm repo
+  - ${{ if ne(parameters.checkoutRef, '') }}:
+    - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/dependencies-rocm.yml
+      parameters:
+        dependencyList: ${{ parameters.rocmDependencies }}
+        dependencySource: tag-builds
+  - script: sudo ln -s $(Agent.BuildDirectory)/rocm /opt/rocm
+    displayName: ROCm symbolic link
+# Build and install gtest, lapack, hipBLAS-common
+# $(Pipeline.Workspace)/deps is a temporary folder for the build process
+# $(Pipeline.Workspace)/s/deps is part of the hipBLASLt repo
+  - script: mkdir $(Pipeline.Workspace)/deps
+# hipBLASLt already has a CMake script for external deps, so we can just run that
+# https://github.com/ROCm/hipBLASLt/blob/develop/deps/CMakeLists.txt
+  - script: cmake $(Pipeline.Workspace)/s/deps
+    displayName: Configure hipBLASLt external dependencies
+    workingDirectory: $(Pipeline.Workspace)/deps
+  - script: make
+    displayName: Build hipBLASLt external dependencies
+    workingDirectory: $(Pipeline.Workspace)/deps
+  - script: sudo make install
+    displayName: Install hipBLASLt external dependencies
+    workingDirectory: $(Pipeline.Workspace)/deps
+# Set link to redirect llvm folder
+  - task: Bash@3
+    displayName: Symlink to rocm/lib/llvm
+    inputs:
+      targetType: inline
+      script: ln -s $(Agent.BuildDirectory)/rocm/llvm $(Agent.BuildDirectory)/rocm/lib/llvm
+  - script: sudo chmod 777 /mnt
+    displayName: 'Set permissions for /mnt'
+  - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/build-cmake.yml
+    parameters:
+      cmakeBuildDir: /mnt/build
+      cmakeSourceDir: $(Pipeline.Workspace)/s
+      extraBuildFlags: >-
+        -DCMAKE_BUILD_TYPE=Release
+        -DCMAKE_CXX_COMPILER=$(Agent.BuildDirectory)/rocm/llvm/bin/amdclang++
+        -DCMAKE_C_COMPILER=$(Agent.BuildDirectory)/rocm/llvm/bin/amdclang
+        -DAMDGPU_TARGETS=gfx942
+        -DTensile_LOGIC=
+        -DTensile_CPU_THREADS=
+        -DTensile_CODE_OBJECT_VERSION=default
+        -DTensile_LIBRARY_FORMAT=msgpack
+        -DCMAKE_PREFIX_PATH="$(Agent.BuildDirectory)/rocm"
+        -GNinja
+  - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/artifact-upload.yml

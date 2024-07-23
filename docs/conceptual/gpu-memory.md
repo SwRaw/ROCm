@@ -2,15 +2,15 @@
   <meta charset="UTF-8">
   <meta name="description" content="GPU memory">
   <meta name="keywords" content="GPU memory, VRAM, video random access memory, pageable
-  memory, pinned memory, managed memory">
+  memory, pinned memory, managed memory, AMD, ROCm">
 </head>
 
 # GPU memory
 
 For the HIP reference documentation, see:
 
-* {doc}`hip:.doxygen/docBin/html/group___memory`
-* {doc}`hip:.doxygen/docBin/html/group___memory_m`
+* {doc}`hip:doxygen/html/group___memory`
+* {doc}`hip:doxygen/html/group___memory_m`
 
 Host memory exists on the host (e.g. CPU) of the machine in random access memory (RAM).
 
@@ -51,7 +51,7 @@ In HIP, pinned memory allocations are coherent by default (`hipHostMallocDefault
 There are additional pinned memory flags (e.g. `hipHostMallocMapped` and `hipHostMallocPortable`).
 On MI200 these options do not impact performance.
 <!-- TODO: link to programming_manual#memory-allocation-flags -->
-For more information, see the section *memory allocation flags* in the HIP Programming Guide: {doc}`hip:user_guide/programming_manual`.
+For more information, see the section *memory allocation flags* in the HIP Programming Guide: {doc}`hip:how-to/programming_manual`.
 :::
 
 Much like how a process can be locked to a CPU core by setting affinity, a pinned memory allocator does this with the memory storage system.
@@ -177,8 +177,8 @@ Fine-grained memory implies that up-to-date data may be made visible to others r
 
 | API                     | Flag                         | Coherence      |
 |-------------------------|------------------------------|----------------|
-| `hipExtMallocWithFlags` | `hipHostMallocDefault`       | Fine-grained   |
-| `hipExtMallocWithFlags` | `hipDeviceMallocFinegrained` | Coarse-grained |
+| `hipExtMallocWithFlags` | `hipDeviceMallocDefault`     | Coarse-grained |
+| `hipExtMallocWithFlags` | `hipDeviceMallocFinegrained` | Fine-grained   |
 
 | API                     | `hipMemAdvise` argument      | Coherence      |
 |-------------------------|------------------------------|----------------|
