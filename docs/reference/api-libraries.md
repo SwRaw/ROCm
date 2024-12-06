@@ -9,15 +9,13 @@
 # ROCm libraries
 
 ::::{grid} 1 2 2 2
+:gutter: 3
 :class-container: rocm-doc-grid
 
 (artificial-intelligence-apis)=
 
-:::{grid-item-card}
-:class-card: sd-text-black
-:img-top: ../data/reference/banner-ai.jpg
-:img-alt: Artificial intelligence APIs
-:padding: 2
+:::{grid-item-card} Machine Learning and Computer Vision
+:class-body: rocm-card-banner rocm-hue-3
 
 * {doc}`Composable Kernel <composable_kernel:index>`
 * {doc}`MIGraphX <amdmigraphx:index>`
@@ -26,16 +24,14 @@
 * {doc}`rocAL <rocal:index>`
 * {doc}`rocDecode <rocdecode:index>`
 * {doc}`rocPyDecode <rocpydecode:index>`
+* {doc}`rocJPEG <rocjpeg:index>`
 * {doc}`ROCm Performance Primitives (RPP) <rpp:index>`
 :::
 
 (cpp-primitives)=
 
-:::{grid-item-card}
-:class-card: sd-text-black
-:img-top: ../data/reference/banner-cpp-primitives.jpg
-:img-alt: C++ primitives
-:padding: 2
+:::{grid-item-card} Primitives
+:class-body: rocm-card-banner rocm-hue-12
 
 * {doc}`hipCUB <hipcub:index>`
 * {doc}`hipTensor <hiptensor:index>`
@@ -45,22 +41,16 @@
 
 (communication-libraries)=
 
-:::{grid-item-card}
-:class-card: sd-text-black
-:img-top: ../data/reference/banner-communication.jpg
-:img-alt: Communication APIs
-:padding: 2
+:::{grid-item-card} Communication
+:class-body: rocm-card-banner rocm-hue-7
 
 * {doc}`RCCL <rccl:index>`
 :::
 
 (math-apis)=
 
-:::{grid-item-card}
-:class-card: sd-text-black
-:img-top: ../data/reference/banner-math.jpg
-:img-alt: Math APIs
-:padding: 2
+:::{grid-item-card} Math
+:class-body: rocm-card-banner rocm-hue-6
 
 * [half](https://github.com/ROCm/half)
 * {doc}`hipBLAS <hipblas:index>` / {doc}`rocBLAS <rocblas:index>`
@@ -73,7 +63,7 @@
 * {doc}`hipSPARSELt <hipsparselt:index>`
 * {doc}`rocALUTION <rocalution:index>`
 * {doc}`rocWMMA <rocwmma:index>`
-* [Tensile](https://github.com/ROCm/Tensile)
+* {doc}`Tensile <tensile:index>`
 :::
 
 ::::

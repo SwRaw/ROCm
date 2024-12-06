@@ -8,32 +8,51 @@ parameters:
 - name: aptPackages
   type: object
   default:
-    - software-properties-common
-    - python3-pip
     - cmake
-    - ninja-build
-    - libsqlite3-dev
-    - libbz2-dev
-    - nlohmann-json3-dev
-    - libgtest-dev
+    - jq
     - libdrm-dev
+    - libsqlite3-dev
+    - libstdc++-12-dev
+    - ninja-build
+    - python3-pip
+    - python3-venv
+    - software-properties-common
+    - zip
+- name: pipModules
+  type: object
+  default:
+    - cget
 - name: rocmDependencies
   type: object
   default:
-    - rocMLIR
+    - half
     - rocRAND
     - rocBLAS
     - hipBLAS
     - hipBLASLt
     - hipBLAS-common
-    - half
-    - composable_kernel
     - rocm-cmake
     - llvm-project
     - ROCR-Runtime
     - rocprofiler-register
     - clr
     - rocminfo
+    - roctracer
+- name: rocmTestDependencies
+  type: object
+  default:
+    - clr
+    - half
+    - hipBLAS
+    - hipBLAS-common
+    - hipBLASLt
+    - llvm-project
+    - rocBLAS
+    - rocm-cmake
+    - rocminfo
+    - ROCR-Runtime
+    - rocprofiler-register
+    - rocRAND
     - roctracer
 
 jobs:
@@ -48,28 +67,18 @@ jobs:
     matrix:
       gfx942:
         JOB_GPU_TARGET: gfx942
-      gfx90a:
-        JOB_GPU_TARGET: gfx90a
   steps:
   - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/dependencies-other.yml
     parameters:
       aptPackages: ${{ parameters.aptPackages }}
-  # The default boost library from apt is 1.74, which does not satisfy MIOpen's build requirement (1.79+)
-  # Upgrade boost from apt by following https://launchpad.net/~mhier/+archive/ubuntu/libboost-latest
-  - task: Bash@3
-    displayName: 'update boost version'
-    inputs:
-      targetType: inline
-      script: sudo add-apt-repository ppa:mhier/libboost-latest -y
-  - task: Bash@3
-    displayName: 'install boost'
-    inputs:
-      targetType: inline
-      script: sudo apt-get --yes install libboost1.83-dev libboost-system1.83-dev libboost-filesystem1.83-dev
+      pipModules: ${{ parameters.pipModules }}
   - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/preamble.yml
   - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/checkout.yml
     parameters:
       checkoutRepo: ${{ parameters.checkoutRepo }}
+  - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/miopen-get-ck-build.yml
+    parameters:
+      gpuTarget: $(JOB_GPU_TARGET)
   - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/dependencies-rocm.yml
     parameters:
       dependencyList: ${{ parameters.rocmDependencies }}
@@ -80,17 +89,111 @@ jobs:
       # manual build case: triggered by ROCm/ROCm repo
       ${{ elseif ne(parameters.checkoutRef, '') }}:
         dependencySource: tag-builds
+  - task: Bash@3
+    displayName: Build and install other dependencies
+    inputs:
+      targetType: inline
+      workingDirectory: $(Build.SourcesDirectory)
+      script: |
+        sudo ln -s $(Agent.BuildDirectory)/rocm /opt/rocm
+        sed -i '/composable_kernel/d' requirements.txt
+        mkdir -p $(Agent.BuildDirectory)/miopen-deps
+        cmake -P install_deps.cmake --prefix $(Agent.BuildDirectory)/miopen-deps
+        sudo rm -rf /opt/rocm
   - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/build-cmake.yml
     parameters:
       extraBuildFlags: >-
         -DMIOPEN_BACKEND=HIP
         -DCMAKE_CXX_COMPILER=$(Agent.BuildDirectory)/rocm/llvm/bin/amdclang++
-        -DCMAKE_PREFIX_PATH=$(Agent.BuildDirectory)/rocm
+        -DCMAKE_PREFIX_PATH=$(Agent.BuildDirectory)/rocm;$(Agent.BuildDirectory)/miopen-deps
+        -DAMDGPU_TARGETS=$(JOB_GPU_TARGET)
         -DMIOPEN_ENABLE_AI_KERNEL_TUNING=OFF
         -DMIOPEN_ENABLE_AI_IMMED_MODE_FALLBACK=OFF
         -DCMAKE_BUILD_TYPE=Release
         -DBUILD_TESTING=ON
         -GNinja
+  - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/manifest.yml
+    parameters:
+      gpuTarget: $(JOB_GPU_TARGET)
   - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/artifact-upload.yml
     parameters:
       gpuTarget: $(JOB_GPU_TARGET)
+
+- job: MIOpen_testing
+  timeoutInMinutes: 90
+  dependsOn: MIOpen
+  condition: and(succeeded(), eq(variables.ENABLE_GFX942_TESTS, 'true'), not(containsValue(split(variables.DISABLED_GFX942_TESTS, ','), variables['Build.DefinitionName'])))
+  variables:
+  - group: common
+  - template: /.azuredevops/variables-global.yml
+  pool: $(JOB_TEST_POOL)
+  workspace:
+    clean: all
+  strategy:
+    matrix:
+      gfx942:
+        JOB_GPU_TARGET: gfx942
+        JOB_TEST_POOL: ${{ variables.GFX942_TEST_POOL }}
+  steps:
+  - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/dependencies-other.yml
+    parameters:
+      aptPackages: ${{ parameters.aptPackages }}
+      pipModules: ${{ parameters.pipModules }}
+  - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/preamble.yml
+  - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/checkout.yml
+    parameters:
+      checkoutRepo: ${{ parameters.checkoutRepo }}
+  - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/dependencies-aqlprofile.yml
+    parameters:
+      ${{ if eq(parameters.checkoutRef, '') }}:
+        dependencySource: staging
+      ${{ elseif ne(parameters.checkoutRef, '') }}:
+        dependencySource: tag-builds
+  - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/miopen-get-ck-build.yml
+    parameters:
+      gpuTarget: $(JOB_GPU_TARGET)
+  - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/dependencies-rocm.yml
+    parameters:
+      dependencyList: ${{ parameters.rocmTestDependencies }}
+      gpuTarget: $(JOB_GPU_TARGET)
+      ${{ if eq(parameters.checkoutRef, '') }}:
+        dependencySource: staging
+      ${{ elseif ne(parameters.checkoutRef, '') }}:
+        dependencySource: tag-builds
+  - task: Bash@3
+    displayName: Build and install other dependencies
+    inputs:
+      targetType: inline
+      workingDirectory: $(Build.SourcesDirectory)
+      script: |
+        sudo ln -s $(Agent.BuildDirectory)/rocm /opt/rocm
+        sed -i '/composable_kernel/d' requirements.txt
+        mkdir -p $(Agent.BuildDirectory)/miopen-deps
+        cmake -P install_deps.cmake --prefix $(Agent.BuildDirectory)/miopen-deps
+        sudo rm -rf /opt/rocm
+  - task: CMake@1
+    displayName: 'MIOpen Test CMake Flags'
+    inputs:
+      cmakeArgs: >-
+        -DCMAKE_PREFIX_PATH=$(Agent.BuildDirectory)/rocm;$(Build.SourcesDirectory)/bin;$(Agent.BuildDirectory)/miopen-deps
+        -DCMAKE_INSTALL_PREFIX=$(Agent.BuildDirectory)/rocm
+        -DCMAKE_CXX_COMPILER=$(Agent.BuildDirectory)/rocm/llvm/bin/amdclang++
+        -DCMAKE_C_COMPILER=$(Agent.BuildDirectory)/rocm/llvm/bin/amdclang
+        -DMIOPEN_BACKEND=HIP
+        -DMIOPEN_TEST_FLAGS=" --disable-verification-cache"
+        -DCMAKE_BUILD_TYPE=release
+        -DBUILD_DEV=OFF
+        -DMIOPEN_USE_MLIR=ON
+        -DMIOPEN_GPU_SYNC=OFF
+        ..
+  - task: Bash@3
+    displayName: 'MIOpen Test Build'
+    inputs:
+      targetType: inline
+      script: |
+        cmake --build . --target tests -- -j$(nproc)
+      workingDirectory: $(Build.SourcesDirectory)/build
+  - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/gpu-diagnostics.yml
+  - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/test.yml
+    parameters:
+      componentName: MIOpen

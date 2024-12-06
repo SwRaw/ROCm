@@ -10,7 +10,7 @@ import shutil
 shutil.copy2("../RELEASE.md", "./about/release-notes.md")
 
 os.system("mkdir -p ../_readthedocs/html/downloads")
-os.system("cp data/reference/compatibility-matrix-historical-6.0.csv ../_readthedocs/html/downloads/compatibility-matrix-historical-6.0.csv")
+os.system("cp compatibility/compatibility-matrix-historical-6.0.csv ../_readthedocs/html/downloads/compatibility-matrix-historical-6.0.csv")
 
 latex_engine = "xelatex"
 latex_elements = {
@@ -30,16 +30,15 @@ if os.environ.get("READTHEDOCS", "") == "True":
 project = "ROCm Documentation"
 author = "Advanced Micro Devices, Inc."
 copyright = "Copyright (c) 2024 Advanced Micro Devices, Inc. All rights reserved."
-version = "6.2.0"
-release = "6.2.0"
+version = "6.3.0"
+release = "6.3.0"
 setting_all_article_info = True
 all_article_info_os = ["linux", "windows"]
 all_article_info_author = ""
 
 # pages with specific settings
 article_pages = [
-    {"file": "about/release-notes", "os": ["linux", "windows"], "date": "2024-08-02"},
-    {"file": "about/changelog", "os": ["linux", "windows"], "date": "2024-08-02"},
+    {"file": "about/release-notes", "os": ["linux", "windows"], "date": "2024-12-03"},
     {"file": "how-to/deep-learning-rocm", "os": ["linux"]},
     {"file": "how-to/rocm-for-ai/index", "os": ["linux"]},
     {"file": "how-to/rocm-for-ai/install", "os": ["linux"]},
@@ -82,6 +81,7 @@ article_pages = [
         "file": "how-to/llm-fine-tuning-optimization/profiling-and-debugging",
         "os": ["linux"],
     },
+    {"file": "how-to/performance-validation/mi300x/vllm-benchmark", "os": ["linux"]},
     {"file": "how-to/system-optimization/index", "os": ["linux"]},
     {"file": "how-to/system-optimization/mi300x", "os": ["linux"]},
     {"file": "how-to/system-optimization/mi200", "os": ["linux"]},
@@ -96,11 +96,11 @@ article_pages = [
 
 external_toc_path = "./sphinx/_toc.yml"
 
-extensions = ["rocm_docs", "sphinx_reredirects"]
+extensions = ["rocm_docs", "sphinx_reredirects", "sphinx_sitemap"]
 
 external_projects_current_project = "rocm"
 
-html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "rocm-stg.amd.com")
+html_baseurl = os.environ.get("READTHEDOCS_CANONICAL_URL", "https://rocm-stg.amd.com/")
 html_context = {}
 if os.environ.get("READTHEDOCS", "") == "True":
     html_context["READTHEDOCS"] = True

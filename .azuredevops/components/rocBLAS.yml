@@ -40,6 +40,7 @@ parameters:
     - aomp-extras
     - hipBLAS-common
     - hipBLASLt
+    - roctracer
 - name: rocmTestDependencies
   type: object
   default:
@@ -52,6 +53,7 @@ parameters:
     - rocprofiler-register
     - rocm_smi_lib
     - ROCR-Runtime
+    - roctracer
 
 jobs:
 - job: rocBLAS
@@ -73,8 +75,6 @@ jobs:
     matrix:
       gfx942:
         JOB_GPU_TARGET: gfx942
-      gfx90a:
-        JOB_GPU_TARGET: gfx90a
   steps:
   - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/dependencies-other.yml
     parameters:
@@ -114,13 +114,16 @@ jobs:
         -DBUILD_CLIENTS_SAMPLES=OFF
         -DROCM_PATH=$(Agent.BuildDirectory)/rocm
         -GNinja
+  - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/manifest.yml
+    parameters:
+      gpuTarget: $(JOB_GPU_TARGET)
   - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/artifact-upload.yml
     parameters:
       gpuTarget: $(JOB_GPU_TARGET)
 
 - job: rocBLAS_testing
   dependsOn: rocBLAS
-  condition: succeeded()
+  condition: and(succeeded(), eq(variables.ENABLE_GFX942_TESTS, 'true'), not(containsValue(split(variables.DISABLED_GFX942_TESTS, ','), variables['Build.DefinitionName'])))
   variables:
   - group: common
   - template: /.azuredevops/variables-global.yml
@@ -155,6 +158,7 @@ jobs:
         dependencySource: staging
       ${{ elseif ne(parameters.checkoutRef, '') }}:
         dependencySource: tag-builds
+  - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/gpu-diagnostics.yml
   - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/test.yml
     parameters:
       componentName: rocBLAS

@@ -13,6 +13,7 @@ AMDMIGraphX
 AMI
 AOCC
 AOMP
+AOTriton
 APBDIS
 APIC
 APIs
@@ -36,6 +37,7 @@ Bluefield
 Bootloader
 CCD
 CDNA
+CHTML
 CIFAR
 CLI
 CLion
@@ -53,6 +55,7 @@ CSC
 CSE
 CSV
 CSn
+CTest
 CTests
 CU
 CUDA
@@ -69,6 +72,7 @@ Concretized
 Conda
 ConnectX
 CuPy
+Dashboarding
 DDR
 DF
 DGEMM
@@ -155,6 +159,7 @@ HWS
 Haswell
 Higgs
 Hyperparameters
+ICD
 ICV
 IDE
 IDEs
@@ -210,6 +215,7 @@ MLM
 MMA
 MMIO
 MMIOH
+MMU
 MNIST
 MPI
 MSVC
@@ -226,6 +232,7 @@ Mellanox's
 Meta's
 Miniconda
 MirroredStrategy
+Mixtral
 Multicore
 Multithreaded
 MyEnvironment
@@ -271,6 +278,8 @@ OpenMPI
 OpenSSL
 OpenVX
 OpenXLA
+Oversubscription
+PagedAttention
 PCC
 PCI
 PCIe
@@ -289,13 +298,17 @@ PipelineParallel
 PnP
 PowerEdge
 PowerShell
+Profiler's
 PyPi
+Pytest
 PyTorch
 Qcycles
+Qwen
 RAII
 RAS
 RCCL
 RDC
+RDC's
 RDMA
 RDNA
 README
@@ -304,6 +317,7 @@ RNN
 RNNs
 ROC
 ROCProfiler
+ROCT
 ROCTracer
 ROCclr
 ROCdbgapi
@@ -387,6 +401,7 @@ UAC
 UC
 UCC
 UCX
+UE
 UIF
 UMC
 USM
@@ -455,6 +470,7 @@ blit
 bootloader
 boson
 bosons
+br
 buildable
 bursty
 bzip
@@ -487,6 +503,7 @@ cuLIB
 cuRAND
 cuSOLVER
 cuSPARSE
+customizations
 cTDP
 dataset
 datasets
@@ -496,6 +513,7 @@ datatypes
 dbgapi
 de
 deallocation
+debuggability
 denoise
 denoised
 denoises
@@ -510,6 +528,8 @@ devsel
 dimensionality
 disambiguates
 distro
+distros
+dkms
 el
 embeddings
 enablement
@@ -558,6 +578,7 @@ hipfort
 hipify
 hipsolver
 hipsparse
+hlist
 hotspotting
 hpc
 hpp
@@ -581,7 +602,9 @@ intra
 invariants
 invocating
 ipo
+jax
 kdb
+kfd
 latencies
 libfabric
 libjpeg
@@ -600,6 +623,7 @@ migraphx
 miopen
 miopengemm
 mivisionx
+mjx
 mkdir
 mlirmiopen
 mtypes
@@ -615,6 +639,7 @@ openmp
 openssl
 optimizers
 os
+oversubscription
 pageable
 parallelization
 parameterization
@@ -651,6 +676,7 @@ quasirandom
 queueing
 rccl
 rdc
+rdma
 reStructuredText
 redirections
 refactorization
@@ -669,6 +695,7 @@ rocALUTION
 rocBLAS
 rocDecode
 rocFFT
+rocJPEG
 rocLIB
 rocMLIR
 rocPRIM
@@ -693,6 +720,7 @@ rocsolver
 rocsparse
 rocthrust
 roctracer
+rst
 runtime
 runtimes
 sL
@@ -741,6 +769,7 @@ uncached
 uncorrectable
 unhandled
 uninstallation
+unmapped
 unsqueeze
 unstacking
 unswitching
@@ -760,6 +789,8 @@ vectorize
 vectorized
 vectorizer
 vectorizes
+virtualize
+virtualized
 vjxb
 voxel
 walkthrough
