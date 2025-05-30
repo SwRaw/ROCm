@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -ex
-source "$(dirname "${BASH_SOURCE[0]}")/compute_helper.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/compute_utils.sh"
 
 set_component_src MIOpen
 
@@ -19,13 +19,13 @@ build_miopen_mlir() {
     mkdir build && cd build
     cmake \
         -G Ninja \
-        -DCMAKE_C_COMPILER="${ROCM_PATH}/llvm/bin/clang" \
-        -DCMAKE_CXX_COMPILER="${ROCM_PATH}/llvm/bin/clang++" \
+        -DCMAKE_C_COMPILER="$(set_build_variables __CLANG__)" \
+        -DCMAKE_CXX_COMPILER="$(set_build_variables __CLANG++__)" \
         -DCMAKE_BUILD_TYPE=Release \
-	-DCMAKE_PREFIX_PATH="${ROCM_PATH};${HOME}/miopen-deps" \
+        -DCMAKE_PREFIX_PATH="${ROCM_PATH};${HOME}/miopen-deps" \
         -DCMAKE_INSTALL_PREFIX="$ROCM_PATH" \
         -DBUILD_FAT_LIBROCKCOMPILER=1 \
-       .. 
+        ..
     cmake --build . -- librockCompiler -j${PROC}
     cmake --build . -- install
 
@@ -50,7 +50,7 @@ build_miopen_deps() {
 
 
     pip3 install https://github.com/RadeonOpenCompute/rbuild/archive/master.tar.gz
-    PATH="${PATH}:${ROCM_PATH}:${HOME}/.local/bin" rbuild prepare -d "$HOME/miopen-deps" --cxx=${ROCM_PATH}/llvm/bin/clang++ --cc ${ROCM_PATH}/llvm/bin/clang
+    PATH="${PATH}:${ROCM_PATH}:${HOME}/.local/bin" rbuild prepare -d "$HOME/miopen-deps" --cxx="$(set_build_variables __CLANG++__)" --cc "$(set_build_variables __CLANG__)"
     build_miopen_mlir "$MLIR_COMMIT"
 
     show_build_cache_stats

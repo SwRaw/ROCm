@@ -1,4 +1,3 @@
-# List of packages needed for stage1 build
 apt-utils
 aria2
 autoconf
@@ -8,33 +7,27 @@ bison
 bridge-utils
 build-essential
 bzip2
-ccache
 check
 chrpath
 cifs-utils
 cpio
 curl
 devscripts
+dkms
 dos2unix
-doxygen
 fakeroot
 flex
 freeglut3-dev
 g++
 g++-multilib
-# gawk is needed for aomp
 gawk
 gcc
 gcc-multilib
 gfortran
 git-lfs
 gnupg
-googletest-tools
 graphviz
-grpc-proto
 kernel-wedge
-# kmod for kernel build
-kmod
 lbzip2
 # less is needed by repo
 less
@@ -67,6 +60,7 @@ libfile-find-rule-perl
 libgflags-dev
 libglew-dev
 libgmp-dev
+libgoogle-glog-dev
 libgtk2.0-dev
 libhdf5-serial-dev
 libjpeg-dev
@@ -81,6 +75,7 @@ libnuma-dev
 libomp-dev
 libopenblas-base
 libopenblas-dev
+libopencv-dev
 libpci-dev
 libpci3
 libpciaccess-dev
@@ -95,6 +90,7 @@ libsuitesparse-dev
 libsystemd-dev
 libtinfo-dev
 libtool
+libunwind-dev
 liburi-encode-perl
 libva-dev
 libvirt-clients
@@ -102,31 +98,32 @@ libvirt-daemon-system
 libyaml-cpp-dev
 libzstd-dev
 llvm
+llvm-6.0-dev
 llvm-dev
 llvm-runtime
 mesa-common-dev
 mpich
 ocaml
 ocaml-findlib
+ocl-icd-libopencl1
+ocl-icd-opencl-dev
 patchelf
 pigz
 pkg-config
 protobuf-compiler
 python-is-python3
+python-pip-whl
+python-yaml
 python3-dev
 python3-pip
-python3-pip-whl
 python3-venv
-python3-yaml
 python3-yaml
 python3.8-dev
 re2c
 redis-tools
-# hipclang needs rpm
 rpm
 rsync
 ssh
-# This makes life more pleasent inside the container
 strace
 sudo
 systemtap-sdt-dev

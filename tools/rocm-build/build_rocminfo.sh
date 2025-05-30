@@ -10,7 +10,9 @@ printUsage() {
     echo "  -c,  --clean              Removes all rocminfo build artifacts"
     echo "  -r,  --release            Build non-debug version rocminfo (default is debug)"
     echo "  -a,  --address_sanitizer  Enable address sanitizer"
-    echo "  -s,  --static             Supports static CI by accepting this param & not bailing out. No effect of the param though"
+    echo "  -s,  --static             Build static lib (.a).  build instead of dynamic/shared(.so) "
+    echo "  -w,  --wheel              Creates python wheel package of rocminfo. 
+                                      It needs to be used along with -r option"
     echo "  -o,  --outdir <pkg_type>  Print path of output directory containing packages of
                                       type referred to by pkg_type"
     echo "  -h,  --help               Prints this help"
@@ -22,17 +24,16 @@ printUsage() {
     return 0
 }
 
-
+PROJ_NAME="rocminfo"
 TARGET="build"
 ROCMINFO_DEST="$(getBinPath)"
 ROCMINFO_SRC_ROOT="$ROCMINFO_ROOT"
-ROCMINFO_BUILD_DIR="$(getBuildPath rocminfo)"
+ROCMINFO_BUILD_DIR="$(getBuildPath $PROJ_NAME)"
 
 MAKEARG="$DASH_JAY"
 PACKAGE_ROOT="$(getPackageRoot)"
-PACKAGE_UTILS="$(getUtilsPath)"
-ROCMINFO_PACKAGE_DEB="$(getPackageRoot)/deb/rocminfo"
-ROCMINFO_PACKAGE_RPM="$(getPackageRoot)/rpm/rocminfo"
+ROCMINFO_PACKAGE_DEB="$PACKAGE_ROOT/deb/$PROJ_NAME"
+ROCMINFO_PACKAGE_RPM="$PACKAGE_ROOT/rpm/$PROJ_NAME"
 BUILD_TYPE="debug"
 SHARED_LIBS="ON"
 CLEAN_OR_OUT=0;
@@ -40,7 +41,8 @@ MAKETARGET="deb"
 PKGTYPE="deb"
 
 
-VALID_STR=`getopt -o hcraso:g: --long help,clean,release,static,address_sanitizer,outdir:,gpu_list: -- "$@"`
+#parse the arguments
+VALID_STR=`getopt -o hcraswo:g: --long help,clean,release,static,wheel,address_sanitizer,outdir:,gpu_list: -- "$@"`
 eval set -- "$VALID_STR"
 
 while true ;
@@ -57,11 +59,13 @@ do
                 set_address_sanitizer_on ; shift ;;
         (-s | --static)
                 SHARED_LIBS="OFF" ; shift ;;
+        (-w | --wheel)
+                WHEEL_PACKAGE=true ; shift ;;
         (-o | --outdir)
                 TARGET="outdir"; PKGTYPE=$2 ; OUT_DIR_SPECIFIED=1 ; ((CLEAN_OR_OUT|=2)) ; shift 2 ;;
         (-g | --gpu_list)
                 GPU_LIST="$2" ; shift 2;;
-        --)     shift; break;;
+        --)     shift; break;; # end delimiter
         (*)
                 echo " This should never come but just incase : UNEXPECTED ERROR Parm : [$1] ">&2 ; exit 20;;
     esac
@@ -91,6 +95,7 @@ build_rocminfo() {
 
         cmake \
             $(rocm_cmake_params) \
+            -DBUILD_SHARED_LIBS=$SHARED_LIBS \
             -DROCRTST_BLD_TYPE="$BUILD_TYPE" \
 	    $(rocm_common_cmake_params) \
             -DCPACK_PACKAGE_VERSION_MAJOR="1" \
@@ -124,7 +129,7 @@ print_output_directory() {
 
 case $TARGET in
     (clean) clean_rocminfo ;;
-    (build) build_rocminfo ;;
+    (build) build_rocminfo; build_wheel "$ROCMINFO_BUILD_DIR" "$PROJ_NAME" ;;
    (outdir) print_output_directory ;;
         (*) die "Invalid target $TARGET" ;;
 esac

@@ -1,7 +1,9 @@
 #!/bin/bash
 
 source "$(dirname "${BASH_SOURCE}")/compute_utils.sh"
-
+#// Currently, roccler does not supports .so but, this change makes this script future
+#   ready & We shall not have to change anything at that time. Also its not doing deviating
+#   from the current functionalities currently as well
 printUsage() {
     echo
     echo "Usage: $(basename "${BASH_SOURCE}") [options ...] [make options]"
@@ -38,6 +40,7 @@ MAKETARGET="deb"
 PKGTYPE="deb"
 
 
+#parse the arguments
 VALID_STR=`getopt -o hcraso: --long help,clean,release,static,address_sanitizer,outdir: -- "$@"`
 eval set -- "$VALID_STR"
 
@@ -57,7 +60,7 @@ do
                 SHARED_LIBS="OFF" ; shift ;;
         (-o | --outdir)
                 TARGET="outdir"; PKGTYPE=$2 ; OUT_DIR_SPECIFIED=1 ; ((CLEAN_OR_OUT|=2)) ; shift 2 ;;
-        --)     shift; break;;
+        --)     shift; break;; # end delimiter
         (*)
                 echo " This should never come but just incase : UNEXPECTED ERROR Parm : [$1] ">&2 ; exit 20;;
     esac
@@ -73,25 +76,32 @@ fi
 
 
 clean_rocclr() {
+    # Delete cmake output directory
     rm -rf "$BUILD_PATH"
     rm -rf "$PACKAGE_DEB"
     rm -rf "$PACKAGE_RPM"
 }
 
 build_rocclr() {
+    # rocclr is now a part of clr repo.
+    # also it does not need to be built independently when build shared libs.
+    # might be needed when building static libs. so leave it place for static libs.
     if [ "$SHARED_LIBS" = "ON" ]; then
         echo "rocclr not a standalone repo. skipping build" >&2
         echo "rocclr not a standalone repo. skipping build"
-        exit 0
+        exit 0  # This is not an error
     fi
 
     if [ ! -e "$CLR_ROOT/CMakeLists.txt" ]; then
+        # We are in a branch that has migrated to clr repo
         _ROCclr_CMAKELIST_DIR="$CLR_ROOT"
     elif [ ! -e "$ROCclr_ROOT/CMakeLists.txt" ]; then
+        # We seem to have hit a branch in which both the old and new repo don't exist
         echo "No $ROCclr_ROOT/CMakeLists.txt file, skipping rocclr" >&2
         echo "No $ROCclr_ROOT/CMakeLists.txt file, skipping rocclr"
-        exit 0
+        exit 0   # This is not an error
     else
+        # We are in a branch that has not yet migrated to clr repo
         _ROCclr_CMAKELIST_DIR="$ROCclr_ROOT"
     fi
     echo "$_ROCclr_CMAKELIST_DIR"
@@ -117,6 +127,9 @@ build_rocclr() {
     popd
 }
 
+# When use -o option, the code should directly exit.
+# The rest part of the code will not execute.
+# Otherwise, it will cause an error of the caller code.
 case $TARGET in
     (clean) clean_rocclr ;;
     (build) build_rocclr ;;

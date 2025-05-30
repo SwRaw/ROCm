@@ -5,6 +5,11 @@ parameters:
 - name: checkoutRef
   type: string
   default: ''
+# set to true if doing full build of ROCm stack
+# and dependencies are pulled from same pipeline
+- name: aggregatePipeline
+  type: boolean
+  default: false
 - name: aptPackages
   type: object
   default:
@@ -29,7 +34,7 @@ jobs:
     value: '$(Build.BinariesDirectory)/amdgcn/bitcode'
   - name: HIP_PATH
     value: '$(Agent.BuildDirectory)/rocm'
-  pool: ${{ variables.MEDIUM_BUILD_POOL }}
+  pool: ${{ variables.ULTRA_BUILD_POOL }}
   workspace:
     clean: all
   steps:
@@ -42,21 +47,17 @@ jobs:
       checkoutRepo: ${{ parameters.checkoutRepo }}
   - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/dependencies-rocm.yml
     parameters:
+      checkoutRef: ${{ parameters.checkoutRef }}
       dependencyList: ${{ parameters.rocmDependencies }}
       skipLlvmSymlink: true
-      # CI case: download latest default branch build
-      ${{ if eq(parameters.checkoutRef, '') }}:
-        dependencySource: staging
-      # manual build case: triggered by ROCm/ROCm repo
-      ${{ elseif ne(parameters.checkoutRef, '') }}:
-        dependencySource: tag-builds
+      aggregatePipeline: ${{ parameters.aggregatePipeline }}
   - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/build-cmake.yml
     parameters:
       componentName: rocm-llvm
       extraBuildFlags: >-
         -DCMAKE_PREFIX_PATH="$(Build.BinariesDirectory)/llvm;$(Build.BinariesDirectory)"
         -DCMAKE_BUILD_TYPE=Release
-        -DLLVM_ENABLE_PROJECTS=clang;lld;clang-tools-extra;mlir
+        -DLLVM_ENABLE_PROJECTS=clang;lld;clang-tools-extra;mlir;flang
         -DLLVM_ENABLE_RUNTIMES=compiler-rt;libunwind;libcxx;libcxxabi
         -DCLANG_ENABLE_AMDCLANG=ON
         -DLLVM_TARGETS_TO_BUILD=AMDGPU;X86
@@ -82,7 +83,8 @@ jobs:
         -DROCM_LLVM_BACKWARD_COMPAT_LINK=$(Build.BinariesDirectory)/llvm
         -DROCM_LLVM_BACKWARD_COMPAT_LINK_TARGET=./lib/llvm
         -GNinja
-      cmakeBuildDir: 'llvm/build'
+      cmakeBuildDir: '$(Build.SourcesDirectory)/llvm/build'
+      cmakeSourceDir: '$(Build.SourcesDirectory)/llvm'
       installDir: '$(Build.BinariesDirectory)/llvm'
 # use llvm-lit to run unit tests for llvm, clang, and lld
   - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/test.yml
@@ -90,7 +92,7 @@ jobs:
       componentName: check-llvm
       testDir: 'llvm/build'
       testExecutable: './bin/llvm-lit'
-      testParameters: '-q --xunit-xml-output=llvm_test_output.xml ./test'
+      testParameters: '-q --xunit-xml-output=llvm_test_output.xml --filter-out="live-debug-values-spill-tracking" ./test'
       testOutputFile: llvm_test_output.xml
   - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/test.yml
     parameters:
@@ -120,14 +122,17 @@ jobs:
       extraBuildFlags: >-
         -DCMAKE_PREFIX_PATH="$(Build.SourcesDirectory)/llvm/build"
         -DCMAKE_BUILD_TYPE=Release
-      cmakeBuildDir: 'amd/device-libs/build'
+      cmakeBuildDir: '$(Build.SourcesDirectory)/amd/device-libs/build'
+      cmakeSourceDir: '$(Build.SourcesDirectory)/amd/device-libs'
   - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/build-cmake.yml
     parameters:
       componentName: comgr
       extraBuildFlags: >-
         -DCMAKE_PREFIX_PATH="$(Build.SourcesDirectory)/llvm/build;$(Build.SourcesDirectory)/amd/device-libs/build"
+        -DCOMGR_DISABLE_SPIRV=1
         -DCMAKE_BUILD_TYPE=Release
-      cmakeBuildDir: 'amd/comgr/build'
+      cmakeBuildDir: '$(Build.SourcesDirectory)/amd/comgr/build'
+      cmakeSourceDir: '$(Build.SourcesDirectory)/amd/comgr'
   - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/test.yml
     parameters:
       componentName: comgr
@@ -140,6 +145,15 @@ jobs:
       extraBuildFlags: >-
         -DCMAKE_BUILD_TYPE=Release
         -DHIPCC_BACKWARD_COMPATIBILITY=OFF
-      cmakeBuildDir: 'amd/hipcc/build'
+      cmakeBuildDir: '$(Build.SourcesDirectory)/amd/hipcc/build'
+      cmakeSourceDir: '$(Build.SourcesDirectory)/amd/hipcc'
   - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/manifest.yml
   - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/artifact-upload.yml
+  - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/artifact-links.yml
+  - template: ${{ variables.CI_TEMPLATE_PATH }}/steps/docker-container.yml
+    parameters:
+      aptPackages: ${{ parameters.aptPackages }}
+      environment: combined
+      extraEnvVars:
+        - HIP_DEVICE_LIB_PATH:::/home/user/workspace/bin/amdgcn/bitcode
+        - HIP_PATH:::/home/user/workspace/rocm

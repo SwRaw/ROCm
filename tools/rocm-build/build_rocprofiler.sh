@@ -8,10 +8,12 @@ printUsage() {
     echo
     echo "Options:"
     echo "  -c,  --clean              Clean output and delete all intermediate work"
-    echo "  -s,  --static             Build static lib (.a).  build instead of dynamic/shared(.so) "
+    echo "  -s,  --static             Component/Build does not support static builds just accepting this param & ignore. No effect of the param on this build"
     echo "  -p,  --package <type>     Specify packaging format"
     echo "  -r,  --release            Make a release build instead of a debug build"
     echo "  -a,  --address_sanitizer  Enable address sanitizer"
+    echo "  -w,  --wheel              Creates python wheel package of roc-profiler.
+                                      It needs to be used along with -r option"
     echo "  -o,  --outdir <pkg_type>  Print path of output directory containing packages of
     type referred to by pkg_type"
     echo "  -h,  --help               Prints this help"
@@ -24,6 +26,7 @@ printUsage() {
     return 0
 }
 
+## Build environment variables
 API_NAME="rocprofiler"
 PROJ_NAME="$API_NAME"
 LIB_NAME="lib${API_NAME}"
@@ -33,8 +36,8 @@ PACKAGE_ROOT="$(getPackageRoot)"
 PACKAGE_LIB="$(getLibPath)"
 PACKAGE_INCLUDE="$(getIncludePath)"
 BUILD_DIR="$(getBuildPath $API_NAME)"
-PACKAGE_DEB="$(getPackageRoot)/deb/$API_NAME"
-PACKAGE_RPM="$(getPackageRoot)/rpm/$API_NAME"
+PACKAGE_DEB="$PACKAGE_ROOT/deb/$PROJ_NAME"
+PACKAGE_RPM="$PACKAGE_ROOT/rpm/$PROJ_NAME"
 PACKAGE_PREFIX="$ROCM_INSTALL_PATH"
 BUILD_TYPE="Debug"
 MAKE_OPTS="$DASH_JAY -C $BUILD_DIR"
@@ -42,12 +45,15 @@ SHARED_LIBS="ON"
 CLEAN_OR_OUT=0
 MAKETARGET="deb"
 PKGTYPE="deb"
-GPU_LIST="gfx900,gfx906,gfx908,gfx90a,gfx940,gfx941,gfx942,gfx1030,gfx1100,gfx1101,gfx1102"
+# Handling GPU Targets for HSACO and HIP Executables
+GPU_LIST="gfx900,gfx906,gfx908,gfx90a,gfx940,gfx941,gfx942,gfx1030,gfx1031,gfx1100,gfx1101,gfx1102,gfx1200,gfx1201"
 
-VALID_STR=$(getopt -o hcraso:p: --long help,clean,release,static,address_sanitizer,outdir:,package: -- "$@")
+#parse the arguments
+VALID_STR=$(getopt -o hcraswo:p: --long help,clean,release,static,wheel,address_sanitizer,outdir:,package: -- "$@")
 eval set -- "$VALID_STR"
 
 while true; do
+    #echo "parocessing $1"
     case "$1" in
     -h | --help)
         printUsage
@@ -68,7 +74,10 @@ while true; do
         shift
         ;;
     -s | --static)
-        SHARED_LIBS="OFF"
+        ack_and_skip_static
+        ;;
+    -w | --wheel)
+        WHEEL_PACKAGE=true
         shift
         ;;
     -o | --outdir)
@@ -85,7 +94,7 @@ while true; do
     --)
         shift
         break
-        ;;
+        ;; # end delimiter
     *)
         echo " This should never come but just incase : UNEXPECTED ERROR Parm : [$1] " >&2
         exit 20
@@ -115,9 +124,6 @@ clean() {
 
 build_rocprofiler() {
     echo "Building $PROJ_NAME"
-
-    sed -i 's/set(CPACK_GENERATOR "DEB" "RPM" "TGZ")/set(CPACK_GENERATOR "DEB" "TGZ")/' "${ROCPROFILER_ROOT}/CMakeLists.txt"
-
     PACKAGE_CMAKE="$(getCmakePath)"
     if [ ! -d "$BUILD_DIR" ]; then
         mkdir -p "$BUILD_DIR"
@@ -131,7 +137,9 @@ build_rocprofiler() {
             -DBUILD_SHARED_LIBS=$SHARED_LIBS \
             -DENABLE_LDCONFIG=OFF \
             -DUSE_PROF_API=1 \
+            -DUSE_GET_ROCM_PATH_API=1 \
             -DGPU_TARGETS="$GPU_LIST" \
+            -DPython3_EXECUTABLE=$(which python3) \
             -DPROF_API_HEADER_PATH="$WORK_ROOT/roctracer/inc/ext" \
             -DHIP_HIPCC_FLAGS=$HIP_HIPCC_FLAGS";--offload-arch=$GPU_LIST" \
             -DCPACK_OBJCOPY_EXECUTABLE="${ROCM_INSTALL_PATH}/llvm/bin/llvm-objcopy" \
@@ -171,7 +179,7 @@ verifyEnvSetup
 
 case "$TARGET" in
 clean) clean ;;
-build) build_rocprofiler ;;
+build) build_rocprofiler; build_wheel "$BUILD_DIR" "$PROJ_NAME" ;;
 outdir) print_output_directory ;;
 *) die "Invalid target $TARGET" ;;
 esac

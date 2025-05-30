@@ -1,4 +1,3 @@
-#!/bin/bash
 
 source "$(dirname "${BASH_SOURCE}")/compute_utils.sh"
 
@@ -10,7 +9,9 @@ printUsage() {
     echo "  -c,  --clean              Removes all amd_smi build artifacts"
     echo "  -r,  --release            Build non-debug version amd_smi (default is debug)"
     echo "  -a,  --address_sanitizer  Enable address sanitizer"
-    echo "  -s,  --static             Build static lib (.a).  build instead of dynamic/shared(.so) "
+    echo "  -s,  --static             Component/Build does not support static builds just accepting this param & ignore. No effect of the param on this build"
+    echo "  -w,  --wheel              Creates python wheel package of amd-smi. 
+                                      It needs to be used along with -r option"
     echo "  -o,  --outdir <pkg_type>  Print path of output directory containing packages of type referred to by pkg_type"
     echo "  -p,  --package <type>     Specify packaging format"
     echo "  -h,  --help               Prints this help"
@@ -22,15 +23,14 @@ printUsage() {
     return 0
 }
 
+PROJ_NAME="amdsmi"
 PACKAGE_ROOT="$(getPackageRoot)"
 TARGET="build"
-
 PACKAGE_LIB=$(getLibPath)
 PACKAGE_INCLUDE="$(getIncludePath)"
-
-AMDSMI_BUILD_DIR=$(getBuildPath amdsmi)
-AMDSMI_PACKAGE_DEB_DIR="$(getPackageRoot)/deb/amdsmi"
-AMDSMI_PACKAGE_RPM_DIR="$(getPackageRoot)/rpm/amdsmi"
+AMDSMI_BUILD_DIR=$(getBuildPath $PROJ_NAME)
+AMDSMI_PACKAGE_DEB_DIR="$PACKAGE_ROOT/deb/$PROJ_NAME"
+AMDSMI_PACKAGE_RPM_DIR="$PACKAGE_ROOT/rpm/$PROJ_NAME"
 AMDSMI_BUILD_TYPE="debug"
 BUILD_TYPE="Debug"
 
@@ -42,7 +42,7 @@ SHARED_LIBS="ON"
 CLEAN_OR_OUT=0;
 PKGTYPE="deb"
 
-VALID_STR=`getopt -o hcraso:p: --long help,clean,release,static,address_sanitizer,outdir:,package: -- "$@"`
+VALID_STR=`getopt -o hcraswo:p: --long help,clean,release,static,wheel,address_sanitizer,outdir:,package: -- "$@"`
 eval set -- "$VALID_STR"
 
 while true ;
@@ -57,10 +57,11 @@ do
         (-a | --address_sanitizer)
                 set_asan_env_vars
                 set_address_sanitizer_on
-                # TODO - support standard option of passing cmake environment vars - CFLAGS,CXXFLAGS etc., to enable address sanitizer
                 ADDRESS_SANITIZER=true ; shift ;;
         (-s | --static)
-                SHARED_LIBS="OFF" ; shift ;;
+                ack_and_skip_static ;;
+        (-w | --wheel)
+                WHEEL_PACKAGE=true ; shift ;;
         (-o | --outdir)
                 TARGET="outdir"; PKGTYPE=$2 ; OUT_DIR_SPECIFIED=1 ; ((CLEAN_OR_OUT|=2)) ; shift 2 ;;
         (-p | --package)
@@ -136,7 +137,7 @@ verifyEnvSetup
 
 case $TARGET in
     (clean) clean_amdsmi ;;
-    (build) build_amdsmi ;;
+    (build) build_amdsmi; build_wheel "$AMDSMI_BUILD_DIR" "$PROJ_NAME" ;;
     (outdir) print_output_directory ;;
     (*) die "Invalid target $TARGET" ;;
 esac

@@ -1,44 +1,46 @@
-
+#!/bin/bash
 
 set -ex
-source "$(dirname "${BASH_SOURCE[0]}")/compute_helper.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/compute_utils.sh"
 
 PATH=${ROCM_PATH}/bin:$PATH
 set_component_src rocSPARSE
 
 build_rocsparse() {
     echo "Start build"
-
     cd $COMPONENT_SRC
-
     if [ "${ENABLE_ADDRESS_SANITIZER}" == "true" ]; then
-       set_asan_env_vars
-       set_address_sanitizer_on
+        set_asan_env_vars
+        set_address_sanitizer_on
+        # updating GPU_ARCHS for ASAN build to supported gpu arch only SWDEV-479178
+        #GPU_ARCHS="gfx90a:xnack+;gfx942:xnack+"#This will be part of compute_utils.sh ROCMOPS-7302 & ROCMOPS-8091
+    fi
+    SHARED_LIBS="ON"
+    if [ "${ENABLE_STATIC_BUILDS}" == "true" ]; then
+        SHARED_LIBS="OFF"
     fi
 
     MIRROR="http://compute-artifactory.amd.com/artifactory/list/rocm-generic-local/mathlib/sparse/"
 
     mkdir -p "$BUILD_DIR" && cd "$BUILD_DIR"
 
-    if [ -n "$GPU_ARCHS" ]; then
-        GPU_TARGETS="$GPU_ARCHS"
-    else
-        GPU_TARGETS="gfx908:xnack-;gfx90a:xnack-;gfx90a:xnack+;gfx940;gfx941;gfx942;gfx1030;gfx1100;gfx1101"
+    # if ENABLE_GPU_ARCH is set in env by Job parameter ENABLE_GPU_ARCH, then set GFX_ARCH to that value. This will override any of the case values above
+    if [ -n "$ENABLE_GPU_ARCH" ]; then
+        #setting gfx arch as part of rocm_common_cmake_params
+        set_gpu_arch "${ENABLE_GPU_ARCH}"
     fi
 
-    ROCSPARSE_TEST_MIRROR=$MIRROR \
-    export CXX=$(set_build_variables CXX)\
-    export CC=$(set_build_variables CC)\
-
     init_rocm_common_cmake_params
+    ROCSPARSE_TEST_MIRROR=$MIRROR \
+    CXX=$(set_build_variables __CXX__)\
+    CC=$(set_build_variables __CC__)\
     cmake \
-        -DAMDGPU_TARGETS=${GPU_TARGETS} \
         ${LAUNCHER_FLAGS} \
-        "${rocm_math_common_cmake_params[@]}"\
+        "${rocm_math_common_cmake_params[@]}" \
+        -DBUILD_SHARED_LIBS=$SHARED_LIBS \
         -DBUILD_CLIENTS_SAMPLES=ON \
         -DBUILD_CLIENTS_TESTS=ON \
         -DBUILD_CLIENTS_BENCHMARKS=ON \
-        -DCPACK_SET_DESTDIR=OFF \
         -DCMAKE_INSTALL_PREFIX=${ROCM_PATH} \
         -DBUILD_ADDRESS_SANITIZER="${ADDRESS_SANITIZER}" \
         -DCMAKE_MODULE_PATH="${ROCM_PATH}/lib/cmake/hip;${ROCM_PATH}/hip/cmake" \
@@ -49,7 +51,7 @@ build_rocsparse() {
     cmake --build "$BUILD_DIR" -- package
 
     rm -rf _CPack_Packages/ && find -name '*.o' -delete
-    mkdir -p $PACKAGE_DIR && cp ${BUILD_DIR}/*.${PKGTYPE} $PACKAGE_DIR
+    copy_if "${PKGTYPE}" "${CPACKGEN:-"DEB;RPM"}" "${PACKAGE_DIR}" "${BUILD_DIR}"/*."${PKGTYPE}"
 
     show_build_cache_stats
 }
@@ -63,7 +65,7 @@ clean_rocsparse() {
 stage2_command_args "$@"
 
 case $TARGET in
-    build) build_rocsparse ;;
+    build) build_rocsparse; build_wheel ;;
     outdir) print_output_directory ;;
     clean) clean_rocsparse ;;
     *) die "Invalid target $TARGET" ;;
