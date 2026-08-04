@@ -1,177 +1,183 @@
-# AMD ROCm Software
+<div align="center">
+  <img src="docs/images/amd-rocm-logo.png" width="200px" alt="ROCm logo">
+  <h3 align="center">
+    Open-source software stack for AMD GPU computing
+  </h3>
+  <p align="center">
+    <a href="https://rocm.docs.amd.com/en/latest/">
+      <b>ROCm Core SDK</b>
+    </a>
+    <span> • </span>
+    <a href="https://rocm.docs.amd.com/projects/ai-ecosystem/en/latest/">
+      <b>AI Ecosystem</b>
+    </a>
+    <span> • </span>
+    <a href="https://instinct.docs.amd.com/latest/">
+      <b>GPU Systems and Infrastructure</b>
+    </a>
+    <span> • </span>
+    <a href="https://rocm.blogs.amd.com/">
+      <b>Blogs</b>
+    </a>
+  </p>
+</div>
 
-ROCm is an open-source stack, composed primarily of open-source software, designed for graphics
-processing unit (GPU) computation. ROCm consists of a collection of drivers, development tools, and
-APIs that enable GPU programming from low-level kernel to end-user applications.
+# AMD ROCm™
 
-With ROCm, you can customize your GPU software to meet your specific needs. You can develop,
-collaborate, test, and deploy your applications in a free, open source, integrated, and secure software
-ecosystem. ROCm is particularly well-suited to GPU-accelerated high-performance computing (HPC),
-artificial intelligence (AI), scientific computing, and computer aided design (CAD).
+ROCm is an open-source software stack of drivers, development tools, and APIs
+that enable GPU programming from low-level kernels to end-user applications. It
+is particularly well-suited to GPU-accelerated high-performance computing (HPC),
+AI, scientific computing, and computer-aided design (CAD).
 
-ROCm is powered by AMD’s
-[Heterogeneous-computing Interface for Portability (HIP)](https://github.com/ROCm/HIP),
-an open-source software C++ GPU programming environment and its corresponding runtime. HIP
-allows ROCm developers to create portable applications on different platforms by deploying code on a
-range of platforms, from dedicated gaming GPUs to exascale HPC clusters.
+ROCm is powered by [HIP](https://rocm.docs.amd.com/projects/HIP/en/latest/), a
+C++ runtime API and kernel language that lets developers write portable GPU code
+with an interface similar to NVIDIA CUDA™. It also supports OpenMP and OpenCL,
+and includes the compilers, debuggers, and libraries needed to build and run GPU
+workloads. ROCm integrates with machine learning frameworks such as PyTorch and
+TensorFlow.
 
-ROCm supports programming models, such as OpenMP and OpenCL, and includes all necessary open
-source software compilers, debuggers, and libraries. ROCm is fully integrated into machine learning
-(ML) frameworks, such as PyTorch and TensorFlow.
+> [!IMPORTANT]
+> A new open-source build platform for ROCm is under development at
+> https://github.com/ROCm/TheRock, featuring a unified CMake build with bundled
+> dependencies, Windows support, and more.
 
-## Getting the ROCm Source Code
+## Table of contents
 
-AMD ROCm is built from open source software. It is, therefore, possible to modify the various components of ROCm by downloading the source code and rebuilding the components. The source code for ROCm components can be cloned from each of the GitHub repositories using git.  For easy access to download the correct versions of each of these tools, the ROCm repository contains a repo manifest file called [default.xml](./default.xml). You can use this manifest file to download the source code for ROCm software.
+- [Supported hardware and operating systems](#supported-hardware-and-operating-systems)
+- [Quick start](#quick-start)
+  - [Get started with ROCm](#get-started-with-rocm)
+  - [Deep learning frameworks on ROCm](#deep-learning-frameworks-on-rocm)
+- [Core components](#core-components)
+  - [Math and compute libraries](#math-and-compute-libraries)
+  - [Communication libraries](#communication-libraries)
+  - [Runtimes and compilers](#runtimes-and-compilers)
+  - [Profiling and debugging tools](#profiling-and-debugging-tools)
+  - [Control and monitoring tools](#control-and-monitoring-tools)
+  - [Media libraries](#media-libraries)
+  - [Storage](#storage)
+- [ROCm Extras](#rocm-extras)
+- [Release notes](#release-notes)
+- [Licenses](#licenses)
+- [Contribute](#contribute)
 
-### Installing the repo tool
+---
 
-The repo tool from Google allows you to manage multiple git repositories simultaneously. Run the following commands to install the repo tool:
+## Supported hardware and operating systems
 
-```bash
-mkdir -p ~/bin/
-curl https://storage.googleapis.com/git-repo-downloads/repo > ~/bin/repo
-chmod a+x ~/bin/repo
-```
+Use the [Compatibility matrix](https://rocm.docs.amd.com/en/latest/compatibility/compatibility-matrix.html) for official support across ROCm versions, operating system kernels, and GPU architectures (CDNA/Instinct™, RDNA/Radeon™, and Radeon Pro). Recent releases cover Ubuntu, RHEL, SLES, Oracle Linux, Debian, Rocky Linux, and more. GPU targets include CDNA4, CDNA3, CDNA2, RDNA4, and RDNA3.
 
-**Note:** The ```~/bin/``` folder is used as an example. You can specify a different folder to install the repo tool into if you desire.
+---
 
-### Installing git-lfs
+## Quick start
 
-Some ROCm projects use the Git Large File Storage (LFS) format that may require you to install git-lfs. Refer to [Git Large File Storage](https://github.com/git-lfs/git-lfs/blob/main/INSTALLING.md) for more information. For example, to install git-lfs for Ubuntu, use the following command:
+Follow these instructions to start using ROCm.
 
-```bash
-sudo apt-get install git-lfs
-```
+### Get started with ROCm
 
-### Downloading the ROCm source code
+Follow the [ROCm installation guide](https://rocm.docs.amd.com/en/latest/install/rocm.html) to install ROCm on your system.
 
-The following example shows how to use the repo tool to download the ROCm source code. If you choose a directory other than ~/bin/ to install the repo tool, you must use that chosen directory in the code as shown below:
+### Deep learning frameworks on ROCm
 
-```bash
-mkdir -p ~/ROCm/
-cd ~/ROCm/
-export ROCM_VERSION=6.4.1
-~/bin/repo init -u http://github.com/ROCm/ROCm.git -b roc-6.4.x -m tools/rocm-build/rocm-${ROCM_VERSION}.xml
-~/bin/repo sync
-```
+See [Install PyTorch for ROCm](https://rocm.docs.amd.com/projects/ai-ecosystem/en/latest/frameworks/pytorch/install.html) or
+[Install JAX for ROCm](https://rocm.docs.amd.com/projects/ai-ecosystem/en/latest/frameworks/jax/install.html) to get started.
 
-**Note:** Using this sample code will cause the repo tool to download the open source code associated with the specified ROCm release. Ensure that you have ssh-keys configured on your machine for your GitHub ID prior to the download as explained at [Connecting to GitHub with SSH](https://docs.github.com/en/authentication/connecting-to-github-with-ssh).
+To learn more about AI training and inference workloads on ROCm, see the [AI
+Ecosystem](https://rocm.docs.amd.com/projects/ai-ecosystem/en/latest/index.html)
+documentation portal.
 
-## Building the ROCm source code
+---
 
-Each ROCm component repository contains directions for building that component, such as the rocSPARSE documentation [Installation and Building for Linux](https://rocm.docs.amd.com/projects/rocSPARSE/en/latest/install/Linux_Install_Guide.html). Refer to the specific component documentation for instructions on building the repository.
+## Core components
 
-Each release of the ROCm software supports specific hardware and software configurations. Refer to [System requirements (Linux)](https://rocm.docs.amd.com/projects/install-on-linux/en/latest/reference/system-requirements.html) for the current supported hardware and OS.
+The core ROCm software stack consists of the following components. Most of them
+are divided across the [ROCm Libraries](https://github.com/ROCm/rocm-libraries)
+and [ROCm Systems](https://github.com/ROCm/rocm-systems/) super-repos by domain.
 
-## Build ROCm from source
+### Math and compute libraries
 
-The Build will use as many processors as it can find to build in parallel. Some of the compiles can consume as much as 10GB of RAM, so make sure you have plenty of Swap Space !
+- [Composable Kernel](https://github.com/ROCm/rocm-libraries/tree/develop/projects/composablekernel)
+- [hipBLAS](https://github.com/ROCm/rocm-libraries/tree/develop/projects/hipblas) and [rocBLAS](https://github.com/ROCm/rocm-libraries/tree/develop/projects/rocblas)
+- [hipBLASLt](https://github.com/ROCm/rocm-libraries/tree/develop/projects/hipblaslt)
+- [hipCUB](https://github.com/ROCm/rocm-libraries/tree/develop/projects/hipcub)
+- [hipFFT](https://github.com/ROCm/rocm-libraries/tree/develop/projects/hipfft) and [rocFFT](https://github.com/ROCm/rocm-libraries/tree/develop/projects/rocfft)
+- [hipRAND](https://github.com/ROCm/rocm-libraries/tree/develop/projects/hiprand) and [rocRAND](https://github.com/ROCm/rocm-libraries/tree/develop/projects/rocrand)
+- [hipSOLVER](https://github.com/ROCm/rocm-libraries/tree/develop/projects/hipsolver) and [rocSOLVER](https://github.com/ROCm/rocm-libraries/tree/develop/projects/rocsolver)
+- [hipSPARSE](https://github.com/ROCm/rocm-libraries/tree/develop/projects/hipsparse) and [rocSPARSE](https://github.com/ROCm/rocm-libraries/tree/develop/projects/rocsparse)
+- [MIOpen](https://github.com/ROCm/rocm-libraries/tree/develop/projects/miopen)
+- [rocPRIM](https://github.com/ROCm/rocm-libraries/tree/develop/projects/rocprim)
+- [rocThrust](https://github.com/ROCm/rocm-libraries/tree/develop/projects/rocthrust)
+- [rocWMMA](https://github.com/ROCm/rocm-libraries/tree/develop/projects/rocwmma)
 
-By default the ROCm build will compile for all supported GPU architectures and will take approximately 500 CPU hours.
-The Build time will reduce significantly if we limit the GPU Architecture/s against which we need to build by using the environment variable GPU_ARCHS as mentioned below.
+### Communication libraries
 
-```bash
-# --------------------------------------
-# Step1: clone source code
-# --------------------------------------
+- [RCCL](https://github.com/ROCm/rocm-systems/tree/develop/projects/rccl)
+- [rocSHMEM](https://github.com/ROCm/rocm-systems/tree/develop/projects/rocshmem)
 
-mkdir -p ~/WORKSPACE/      # Or any folder name other than WORKSPACE
-cd ~/WORKSPACE/
-export ROCM_VERSION=6.4.1
-~/bin/repo init -u http://github.com/ROCm/ROCm.git -b roc-6.4.x -m tools/rocm-build/rocm-${ROCM_VERSION}.xml
-~/bin/repo sync
+### Runtimes and compilers
 
-# --------------------------------------
-# Step 2: Prepare build environment
-# --------------------------------------
+- [HIP](https://github.com/ROCm/rocm-systems/tree/develop/projects/hip)
+- [HIPIFY](https://github.com/ROCm/HIPIFY)
+- [LLVM](https://github.com/ROCm/llvm-project)
+- [ROCr Runtime](https://github.com/ROCm/rocm-systems/tree/develop/projects/rocr-runtime)
+- [SPIRV-LLVM-Translator](https://github.com/ROCm/SPIRV-LLVM-Translator)
 
-# Option 1: Start a docker container
-# Pulling required base docker images:
-# Ubuntu22.04 built from ROCm/tools/rocm-build/docker/ubuntu22/Dockerfile
-docker pull rocm/rocm-build-ubuntu-22.04:6.4
-# Ubuntu24.04 built from ROCm/tools/rocm-build/docker/ubuntu24/Dockerfile
-docker pull rocm/rocm-build-ubuntu-24.04:6.4
+### Profiling and debugging tools
 
-# Start docker container and mount the source code folder:
-docker run -ti \
-    -e ROCM_VERSION=${ROCM_VERSION} \
-    -e CCACHE_DIR=$HOME/.ccache \
-    -e CCACHE_ENABLED=true \
-    -e DOCK_WORK_FOLD=/src \
-    -w /src \
-    -v $PWD:/src \
-    -v /etc/passwd:/etc/passwd \
-    -v /etc/shadow:/etc/shadow \
-    -v ${HOME}/.ccache:${HOME}/.ccache \
-    -u $(id -u):$(id -g) \
-    <replace_with_required_ubuntu_base_docker_image> bash
+- [ROCm Compute Profiler (rocprofiler-compute)](https://github.com/ROCm/rocm-systems/tree/develop/projects/rocprofiler-compute)
+- [ROCm Systems Profiler (rocprofiler-systems)](https://github.com/ROCm/rocm-systems/tree/develop/projects/rocprofiler-systems)
+- [ROCprofiler-SDK](https://github.com/ROCm/rocm-systems/tree/develop/projects/rocprofiler-sdk)
+- [ROCdbgapi](https://github.com/ROCm/rocm-systems/tree/develop/projects/rocdbgapi)
+- [ROCgdb](https://github.com/ROCm/ROCgdb)
+- [ROCr Debug Agent](https://github.com/ROCm/rocr_debug_agent)
 
-# Option 2: Install required packages into the host machine
-# For ubuntu22.04 system
-cd ROCm/tools/rocm-build/docker/ubuntu22
-cp * /tmp && cd /tmp
-bash install-prerequisites.sh
-# For ubuntu24.04 system
-cd ROCm/tools/rocm-build/docker/ubuntu24
-cp * /tmp && cd /tmp
-bash install-prerequisites.sh
+### Control and monitoring tools
 
-# --------------------------------------
-# Step 3: Run build command line
-# --------------------------------------
+- [AMD SMI](https://github.com/ROCm/rocm-systems/tree/develop/projects/amdsmi)
+- [ROCm Data Center Tool](https://github.com/ROCm/rocm-systems/tree/develop/projects/rdc)
+- [rocminfo](https://github.com/ROCm/rocm-systems/tree/develop/projects/rocminfo)
 
-# Select GPU targets before building:
-# When GPU_ARCHS is not set, default GPU targets supported by ROCm6.1 will be used.
-# To build against a subset of GFX architectures you can use the below env variable.
-# Support MI300 (gfx940, gfx941, gfx942).
-export GPU_ARCHS="gfx942"               # Example
-export GPU_ARCHS="gfx940;gfx941;gfx942" # Example
+### Media libraries
 
-# Pick and run build commands in the docker container:
-# Build rocm-dev packages
-make -f ROCm/tools/rocm-build/ROCm.mk -j ${NPROC:-$(nproc)} rocm-dev
-# Build all ROCm packages
-make -f ROCm/tools/rocm-build/ROCm.mk -j ${NPROC:-$(nproc)} all
-# list all ROCm components to find required components
-make -f ROCm/tools/rocm-build/ROCm.mk list_components
-# Build a single ROCm packages
-make -f ROCm/tools/rocm-build/ROCm.mk T_rocblas
+- [rocDecode](https://github.com/ROCm/rocm-systems/tree/develop/projects/rocdecode)
+- [rocJPEG](https://github.com/ROCm/rocm-systems/tree/develop/projects/rocjpeg)
 
-# Find built packages in ubuntu22.04:
-out/ubuntu-22.04/22.04/deb/
-# Find built packages in ubuntu24.04:
-out/ubuntu-24.04/24.04/deb/
+### Storage
 
-# Find built logs in ubuntu22.04:
-out/ubuntu-22.04/22.04/logs/
-# Find built logs in ubuntu24.04:
-out/ubuntu-24.04/24.04/logs/
-# All logs pertaining to failed components, end with .errrors extension.
-out/ubuntu-22.04/22.04/logs/rocblas.errors      # Example
-# All logs pertaining to building components, end with .inprogress extension.
-out/ubuntu-22.04/22.04/logs/rocblas.inprogress  # Example
-# All logs pertaining to passed components, use the component names.
-out/ubuntu-22.04/22.04/logs/rocblas             # Example
-```
+- [hipFile](https://github.com/ROCm/rocm-systems/tree/develop/projects/hipfile)
 
-Note: [Overview for ROCm.mk](tools/rocm-build/README.md)
+For a complete list of foundational ROCm components, see [ROCm Core
+SDK components](https://rocm.docs.amd.com/en/latest/components/core.html).
 
-## ROCm documentation
+## ROCm Extras
 
-This repository contains the [manifest file](https://gerrit.googlesource.com/git-repo/+/HEAD/docs/manifest-format.md)
-for ROCm releases, changelogs, and release information.
+ROCm Extras include supplementary tools for benchmarking, validating, and managing ROCm deployment.
 
-The `default.xml` file contains information for all repositories and the associated commit used to build
-the current ROCm release; `default.xml` uses the [Manifest Format repository](https://gerrit.googlesource.com/git-repo/).
+- [ROCm Validation Suite (RVS)](https://github.com/ROCm/ROCmValidationSuite) and [TransferBench](https://github.com/ROCm/TransferBench)
 
-Source code for our documentation is located in the `/docs` folder of most ROCm repositories. The
-`develop` branch of our repositories contains content for the next ROCm release.
+---
 
-The ROCm documentation homepage is [rocm.docs.amd.com](https://rocm.docs.amd.com).
+## Release notes
 
-For information on how to contribute to the ROCm documentation, see [Contributing to the ROCm documentation](https://rocm.docs.amd.com/en/latest/contribute/contributing.html).
+- [Latest ROCm release](https://rocm.docs.amd.com/en/latest/about/release-notes.html)
 
-## Older ROCm releases
-
-For release information for older ROCm releases, refer to the
+For information on older ROCm releases, see the
 [ROCm release history](https://rocm.docs.amd.com/en/latest/release/versions.html).
+
+---
+
+## Licenses
+
+- [ROCm licenses](https://rocm.docs.amd.com/en/latest/about/license.html)
+
+---
+
+## Contribute
+
+AMD welcomes ROCm contributions using GitHub PRs or issues. See the links
+below for contribution guidelines.
+
+- [ROCm](CONTRIBUTING.md)
+- [TheRock](https://github.com/ROCm/TheRock/blob/main/CONTRIBUTING.md)
+- [ROCm documentation](https://rocm.docs.amd.com/en/latest/contribute/contributing.html)
+- [ROCm Systems](https://github.com/ROCm/rocm-systems/blob/develop/CONTRIBUTING.md)
+- [ROCm Libraries](https://github.com/ROCm/rocm-libraries/blob/develop/CONTRIBUTING.md)
